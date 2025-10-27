@@ -1,11 +1,10 @@
 services:
   # Base de datos MySQL
   mysql:
-    container_name: mysql-antonella
     image: mysql:8.0
     restart: unless-stopped
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     environment:
       MYSQL_ROOT_PASSWORD: wordpress
       MYSQL_DATABASE: wordpress
@@ -22,7 +21,6 @@ services:
   # phpMyAdmin para gestión de base de datos
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
-    container_name: phpmyadmin-antonella
     restart: unless-stopped
     environment:
       PMA_HOST: mysql
@@ -33,18 +31,17 @@ services:
       mysql:
         condition: service_healthy
     ports:
-      - "9000:80"
+      - "${PHPMYADMIN_PORT:-9000}:80"
 
   # WordPress con configuración automática
   wordpress:
     build:
       context: .
       dockerfile: docker/Dockerfile.wordpress
-    container_name: wp-antonella
     hostname: antonella.test
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${WORDPRESS_PORT:-8080}:80"
     depends_on:
       mysql:
         condition: service_healthy
@@ -66,8 +63,8 @@ services:
       # Configuración adicional de WordPress
       WORDPRESS_CONFIG_EXTRA: |
         // Configuración del sitio
-        define('WP_HOME', 'http://localhost:8080');
-        define('WP_SITEURL', 'http://localhost:8080');
+        define('WP_HOME', 'http://localhost:${WORDPRESS_PORT:-8080}');
+        define('WP_SITEURL', 'http://localhost:${WORDPRESS_PORT:-8080}');
         define('DOMAIN_CURRENT_SITE', 'antonella.test');
         
         // Configuración de desarrollo
@@ -101,7 +98,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.wordpress
-    container_name: wpcli-antonella
     volumes:
       - ./:/var/www/html/wp-content/plugins/antonella-framework
       - wordpress_data:/var/www/html
@@ -113,7 +109,8 @@ services:
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress
-    command: tail -f /dev/null  # Mantener el contenedor activo
+      WORDPRESS_PORT: ${WORDPRESS_PORT:-8080}
+    command: tail -f /dev/null
 
 # Volúmenes persistentes
 volumes:
